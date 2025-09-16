@@ -1,0 +1,53 @@
+public class test300 {
+
+    private static final Object NULL = null;
+
+    /**
+     * Wraps the given object if necessary.
+     * <p>
+     * If the object is null or, returns {@link #NULL}. If the object is a
+     * {@code JSONArray} or {@code JSONObject}, no wrapping is necessary. If the object is
+     * {@code NULL}, no wrapping is necessary. If the object is an array or
+     * {@code Collection}, returns an equivalent {@code JSONArray}. If the object is a
+     * {@code Map}, returns an equivalent {@code JSONObject}. If the object is a primitive
+     * wrapper type or {@code String}, returns the object. Otherwise if the object is from
+     * a {@code java} package, returns the result of {@code toString}. If wrapping fails,
+     * returns null.
+     *
+     * @param o the object to wrap
+     * @return the wrapped object
+     */
+    @SuppressWarnings("rawtypes")
+    public static Object wrap(Object o) {
+        if (o == null) {
+            return NULL;
+        }
+        if (o instanceof JSONArray || o instanceof JSONObject) {
+            return o;
+        }
+        if (o.equals(NULL)) {
+            return o;
+        }
+        try {
+            if (o instanceof Collection) {
+                return new JSONArray((Collection) o);
+            } else if (o.getClass().isArray()) {
+                return new JSONArray(o);
+            }
+            if (o instanceof Map) {
+                return new JSONObject((Map) o);
+            }
+            if (o instanceof Boolean || o instanceof Byte || o instanceof Character || o instanceof Double
+                    || o instanceof Float || o instanceof Integer || o instanceof Long || o instanceof Short
+                    || o instanceof String) {
+                return o;
+            }
+            if (o.getClass().getPackage().getName().startsWith("java.")) {
+                return o.toString();
+            }
+        } catch (Exception ex) {
+            // Ignore
+        }
+        return null;
+    }
+}

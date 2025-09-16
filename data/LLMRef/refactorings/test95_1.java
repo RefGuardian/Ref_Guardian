@@ -1,0 +1,34 @@
+public class test95 {
+
+    @Test
+    void customRemoteIpValve() {
+        bind("server.tomcat.remoteip.remote-ip-header=x-my-remote-ip-header",
+                "server.tomcat.remoteip.protocol-header=x-my-protocol-header",
+                "server.tomcat.remoteip.internal-proxies=192.168.0.1",
+                "server.tomcat.remoteip.host-header=x-my-forward-host",
+                "server.tomcat.remoteip.port-header=x-my-forward-port",
+                "server.tomcat.remoteip.protocol-header-https-value=On",
+                "server.tomcat.remoteip.trusted-proxies=proxy1|proxy2");
+        TomcatServletWebServerFactory factory = customizeAndGetFactory();
+        assertThat(factory.getEngineValves()).hasSize(1);
+        Valve valve = factory.getEngineValves().iterator().next();
+        assertThat(valve).isInstanceOf(RemoteIpValve.class);
+        RemoteIpValve remoteIpValve = (RemoteIpValve) valve;
+        assertThat(remoteIpValve.getProtocolHeader()).isEqualTo("x-my-protocol-header");
+        assertThat(remoteIpValve.getProtocolHeaderHttpsValue()).isEqualTo("On");
+        assertThat(remoteIpValve.getRemoteIpHeader()).isEqualTo("x-my-remote-ip-header");
+        assertThat(remoteIpValve.getHostHeader()).isEqualTo("x-my-forward-host");
+        assertThat(remoteIpValve.getPortHeader()).isEqualTo("x-my-forward-port");
+        assertThat(remoteIpValve.getInternalProxies()).isEqualTo("192.168.0.1");
+        assertThat(remoteIpValve.getTrustedProxies()).isEqualTo("proxy1|proxy2");
+    }
+
+    private void bind(String... args) {
+        // Bind implementation
+    }
+
+    private TomcatServletWebServerFactory customizeAndGetFactory() {
+        // Customization and factory creation implementation
+        return new TomcatServletWebServerFactory();
+    }
+}

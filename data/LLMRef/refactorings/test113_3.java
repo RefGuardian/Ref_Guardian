@@ -1,0 +1,34 @@
+public class test113 {
+
+    @Test
+    void webEndpointsShouldWork() {
+        ReactiveWebApplicationContextRunner runner = new ReactiveWebApplicationContextRunner(AnnotationConfigReactiveWebServerApplicationContext::new)
+                .withConfiguration(AutoConfigurations.of(HttpHandlerAutoConfiguration.class, WebFluxAutoConfiguration.class,
+                        ErrorWebFluxAutoConfiguration.class, PropertyPlaceholderAutoConfiguration.class,
+                        JacksonAutoConfiguration.class, CodecsAutoConfiguration.class,
+                        RSocketStrategiesAutoConfiguration.class, RSocketServerAutoConfiguration.class,
+                        RSocketMessagingAutoConfiguration.class, RSocketRequesterAutoConfiguration.class))
+                .withUserConfiguration(WebConfiguration.class)
+                .withPropertyValues("spring.rsocket.server.transport=websocket",
+                        "spring.rsocket.server.mapping-path=/rsocket")
+                .run((context) -> {
+                    ReactiveWebServerApplicationContext serverContext = (ReactiveWebServerApplicationContext) context
+                            .getSourceApplicationContext();
+                    RSocketRequester requester = createRSocketRequester(context, serverContext.getWebServer());
+                    TestProtocol rsocketResponse = requester.route("websocket")
+                            .data(new TestProtocol("rsocket"))
+                            .retrieveMono(TestProtocol.class)
+                            .block(Duration.ofSeconds(3));
+                    assertThat(rsocketResponse.getName()).isEqualTo("rsocket");
+                    WebTestClient client = createWebTestClient(serverContext.getWebServer());
+                    client.get()
+                            .uri("/protocol")
+                            .exchange()
+                            .expectStatus()
+                            .isOk()
+                            .expectBody()
+                            .jsonPath("name")
+                            .isEqualTo("http");
+                });
+    }
+}

@@ -1,0 +1,37 @@
+public class test256 {
+
+    @Bean
+    @ConditionalOnMissingBean
+    public Authenticator couchbaseAuthenticator(CouchbaseConnectionDetails connectionDetails) throws IOException {
+        if (connectionDetails.getUsername() != null && connectionDetails.getPassword() != null) {
+            return PasswordAuthenticator.create(connectionDetails.getUsername(), connectionDetails.getPassword());
+        }
+        Pem pem = this.properties.getAuthentication().getPem();
+        if (pem.getCertificates() != null) {
+            return createCertificateAuthenticator(pem);
+        }
+        Jks jks = this.properties.getAuthentication().getJks();
+        if (jks.getLocation() != null) {
+            return createCertificateAuthenticatorFromKeyStore(jks);
+        }
+        throw new IllegalStateException("Couchbase authentication requires username and password, or certificates");
+    }
+
+    private CertificateAuthenticator createCertificateAuthenticator(Pem pem) {
+        PemSslStoreDetails details = new PemSslStoreDetails(null, pem.getCertificates(), pem.getPrivateKey());
+        PemSslStore store = PemSslStore.load(details);
+        return CertificateAuthenticator.fromKey(store.privateKey(), pem.getPrivateKeyPassword(), store.certificates());
+    }
+
+    private CertificateAuthenticator createCertificateAuthenticatorFromKeyStore(Jks jks) throws IOException {
+        Resource resource = this.resourceLoader.getResource(jks.getLocation());
+        String keystorePassword = jks.getPassword();
+        try (InputStream inputStream = resource.getInputStream()) {
+            KeyStore store = KeyStore.getInstance(KeyStore.getDefaultType());
+            store.load(inputStream, (keystorePassword != null) ? keystorePassword.toCharArray() : null);
+            return CertificateAuthenticator.fromKeyStore(store, keystorePassword);
+        } catch (GeneralSecurityException ex) {
+            throw new IllegalStateException("Error reading Couchbase certificate store", ex);
+        }
+    }
+}

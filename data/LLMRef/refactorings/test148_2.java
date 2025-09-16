@@ -1,0 +1,44 @@
+public class test148 {
+
+    private static final String TOPIC_NAME = "mytopic";
+    private static final String TOPIC_PATTERN = "my-pattern";
+    private static final String DEAD_LETTER_TOPIC = "my-dlt";
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void customizeMessageConsumerBuilder() {
+        PulsarProperties properties = new PulsarProperties();
+        List<String> topics = List.of(TOPIC_NAME);
+        Pattern topisPattern = Pattern.compile(TOPIC_PATTERN);
+        properties.getConsumer().setName("name");
+        properties.getConsumer().setTopics(topics);
+        properties.getConsumer().setTopicsPattern(topisPattern);
+        properties.getConsumer().setPriorityLevel(123);
+        properties.getConsumer().setReadCompacted(true);
+        Consumer.DeadLetterPolicy deadLetterPolicy = new Consumer.DeadLetterPolicy();
+        deadLetterPolicy.setDeadLetterTopic(DEAD_LETTER_TOPIC);
+        deadLetterPolicy.setMaxRedeliverCount(1);
+        properties.getConsumer().setDeadLetterPolicy(deadLetterPolicy);
+        properties.getConsumer().setRetryEnable(false);
+        Subscription subscriptionProperties = properties.getConsumer().getSubscription();
+        subscriptionProperties.setName("subname");
+        subscriptionProperties.setInitialPosition(SubscriptionInitialPosition.Earliest);
+        subscriptionProperties.setMode(SubscriptionMode.NonDurable);
+        subscriptionProperties.setTopicsMode(RegexSubscriptionMode.NonPersistentOnly);
+        subscriptionProperties.setType(SubscriptionType.Key_Shared);
+        ReactiveMessageConsumerBuilder<Object> builder = mock(ReactiveMessageConsumerBuilder.class);
+        new PulsarReactivePropertiesMapper(properties).customizeMessageConsumerBuilder(builder);
+        then(builder).should().consumerName("name");
+        then(builder).should().topics(topics);
+        then(builder).should().topicsPattern(topisPattern);
+        then(builder).should().priorityLevel(123);
+        then(builder).should().readCompacted(true);
+        then(builder).should().deadLetterPolicy(new DeadLetterPolicy(1, null, DEAD_LETTER_TOPIC, null, null, null));
+        then(builder).should().retryLetterTopicEnable(false);
+        then(builder).should().subscriptionName("subname");
+        then(builder).should().subscriptionInitialPosition(SubscriptionInitialPosition.Earliest);
+        then(builder).should().subscriptionMode(SubscriptionMode.NonDurable);
+        then(builder).should().topicsPatternSubscriptionMode(RegexSubscriptionMode.NonPersistentOnly);
+        then(builder).should().subscriptionType(SubscriptionType.Key_Shared);
+    }
+}

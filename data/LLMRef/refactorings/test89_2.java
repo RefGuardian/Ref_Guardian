@@ -1,0 +1,29 @@
+public class test89 {
+
+    @Test
+	void neverIncludeMessage() {
+		this.contextRunner
+			.withPropertyValues("server.error.include-exception=true", "server.error.include-message=never")
+			.run(this::executeTest);
+	}
+
+	private void executeTest(ConfigurableApplicationContext context) {
+		WebTestClient client = getWebClient(context);
+		client.get()
+			.uri("/?trace=true")
+			.exchange()
+			.expectStatus()
+			.isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+			.expectBody()
+			.jsonPath("status")
+			.isEqualTo("500")
+			.jsonPath("error")
+			.isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+			.jsonPath("exception")
+			.isEqualTo(IllegalStateException.class.getName())
+			.jsonPath("message")
+			.doesNotExist()
+			.jsonPath("requestId")
+			.isEqualTo(this.logIdFilter.getLogId());
+	}
+}

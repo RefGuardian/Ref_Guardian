@@ -1,0 +1,30 @@
+public class test91 {
+
+    @Test
+    	void escapeHtmlInDefaultErrorView() {
+    		this.contextRunner
+    			.withPropertyValues("spring.mustache.prefix=classpath:/unknown/", "server.error.include-message=always")
+    			.run((context) -> {
+                    WebTestClient client = getWebClient(context);
+                    String body = runGetMethodAndExpectError(client);
+                    assertThat(body).contains("Whitelabel Error Page")
+    					.contains(this.logIdFilter.getLogId())
+    					.doesNotContain("<script>")
+    					.contains("&lt;script&gt;");
+    			});
+    	}
+
+    private String runGetMethodAndExpectError(WebTestClient client) {
+        return client.get()
+            .uri("/html")
+            .accept(MediaType.TEXT_HTML)
+            .exchange()
+            .expectStatus()
+            .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+            .expectHeader()
+            .contentType(TEXT_HTML_UTF8)
+            .expectBody(String.class)
+            .returnResult()
+            .getResponseBody();
+    }
+}
